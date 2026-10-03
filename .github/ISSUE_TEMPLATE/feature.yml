@@ -1,0 +1,55 @@
+name: Feature
+description: New behaviour, a new check, or a change to a rule.
+type: Feature
+projects: ["speedbay-it/2"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Describe the change and why it is worth doing now. If it waits on other work, link that
+        issue as "blocked by" after filing; if it waits on a date, triage sets Target date.
+        Priority and Effort here are your estimate; triage sets the matching fields on the tracker Project.
+  - type: textarea
+    id: design-summary
+    attributes:
+      label: Design summary
+      description: What the feature does and the shape of the change.
+    validations:
+      required: true
+  - type: textarea
+    id: why-now
+    attributes:
+      label: Why now / what unblocks it
+      description: The trigger that makes this worth doing, or the issue or date it waits on.
+    validations:
+      required: false
+  - type: textarea
+    id: exit-criterion
+    attributes:
+      label: Exit criterion
+      description: The observable result that means this is done.
+    validations:
+      required: false
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      description: How soon this needs attention.
+      options:
+        - Urgent
+        - High
+        - Medium
+        - Low
+    validations:
+      required: false
+  - type: dropdown
+    id: effort
+    attributes:
+      label: Effort
+      description: Rough size of the work.
+      options:
+        - High
+        - Medium
+        - Low
+    validations:
+      required: false

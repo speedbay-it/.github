@@ -1,0 +1,47 @@
+name: Task
+description: A discrete piece of work that is neither a defect nor new behaviour - a sweep, a bump, a cleanup.
+type: Task
+projects: ["speedbay-it/2"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        One unit of work per issue. Split larger work into sub-issues after filing.
+        Priority and Effort here are your estimate; triage sets the matching fields on the tracker Project.
+  - type: textarea
+    id: what
+    attributes:
+      label: What
+      description: The work to do, and where.
+    validations:
+      required: true
+  - type: textarea
+    id: exit-criterion
+    attributes:
+      label: Exit criterion
+      description: The observable result that means this is done.
+    validations:
+      required: false
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      description: How soon this needs attention.
+      options:
+        - Urgent
+        - High
+        - Medium
+        - Low
+    validations:
+      required: false
+  - type: dropdown
+    id: effort
+    attributes:
+      label: Effort
+      description: Rough size of the work.
+      options:
+        - High
+        - Medium
+        - Low
+    validations:
+      required: false

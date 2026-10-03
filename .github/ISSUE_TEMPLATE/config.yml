@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Speed Bay tracker (org Project)
+    url: https://github.com/orgs/speedbay-it/projects/2
+    about: Browse all open work across the fleet - status, priority and target dates - before filing a duplicate.

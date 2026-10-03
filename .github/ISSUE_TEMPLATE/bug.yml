@@ -1,0 +1,56 @@
+name: Bug
+description: Something is broken or behaves differently from what the standards or docs say.
+type: Bug
+projects: ["speedbay-it/2"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        File one defect per issue. Name the version or commit you saw it on, and say how it surfaced
+        (an audit, a gate run, a fleet log, normal use). Priority and Effort here are your estimate;
+        triage sets the matching fields on the tracker Project.
+  - type: textarea
+    id: symptoms
+    attributes:
+      label: Symptoms
+      description: What happens, and what should happen instead. Paste exact error text where you have it.
+    validations:
+      required: true
+  - type: input
+    id: surfacing
+    attributes:
+      label: Surfacing
+      description: Where it showed up - the tool, the audit or check, and the version or commit.
+      placeholder: "e.g. precommit.py check_x on v1.2.3, or fleet_audit.py run 2026-10-03"
+    validations:
+      required: false
+  - type: textarea
+    id: fix-path
+    attributes:
+      label: Fix path
+      description: The likely fix, if known. Leave blank when it still needs diagnosis.
+    validations:
+      required: false
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      description: How soon this needs attention.
+      options:
+        - Urgent
+        - High
+        - Medium
+        - Low
+    validations:
+      required: false
+  - type: dropdown
+    id: effort
+    attributes:
+      label: Effort
+      description: Rough size of the fix.
+      options:
+        - High
+        - Medium
+        - Low
+    validations:
+      required: false
