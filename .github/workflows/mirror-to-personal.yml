@@ -1,0 +1,79 @@
+name: Mirror to personal account
+
+on:
+  push:
+    # main and tags only. Under the PR-only flow (standards ROADMAP 4.295) every change is a
+    # topic-branch push, and mirroring those was pointless: the next push to main runs this same
+    # workflow, whose `git push --prune ... '+refs/heads/*:refs/heads/*'` below copies whatever
+    # branches exist on the source at that moment and DELETES the merged ones from the mirror.
+    # Each topic-branch push cost a 10-25s Ubuntu run for a ref that would be pruned anyway.
+    #
+    # This also keeps dependabot/** out, which was the reason for the earlier
+    # ['**', '!dependabot/**'] filter: GitHub does not pass organization or repository secrets to
+    # Dependabot-triggered runs, so secrets.MIRROR_SSH_KEYS resolved to the EMPTY STRING there and
+    # the run failed every time, by construction (measured in compliance-evidence
+    # 2026-09-16T08:15:55Z). A merged Dependabot PR still mirrors normally - it lands on main.
+    branches: [main]
+    tags: ['**']
+  workflow_dispatch: {}
+
+# One run at a time per repository (standards ROADMAP §2.13). A branch and a tag pushed together
+# start two runs that race to move the same mirror refs; the loser fails on a ref lock, and an
+# older run that finished last would force main back and --prune what the newer run added.
+# Keyed on the repository, not the ref, and not cancel-in-progress: the run already pushing
+# finishes, and the one queued behind it clones afterwards, so it mirrors the newest state.
+concurrency:
+  group: mirror-${{ github.repository }}
+  cancel-in-progress: false
+
+# Declared, not inherited from the org's default workflow permissions (standards ROADMAP §2.16).
+# The token only has to read this repo: the push out authenticates with the deploy key from
+# MIRROR_SSH_KEYS, never with it.
+permissions:
+  contents: read
+
+jobs:
+  mirror:
+    # This workflow file is itself mirrored to gkriegspeedbay/<repo>, whose
+    # push then re-triggers this same workflow there. That destination-repo
+    # run always failed: its repo-scoped secrets.GITHUB_TOKEN can't read the
+    # private speedbay-it source, so every fleet push produced a guaranteed
+    # failure notification. Only the source-org run should ever do the clone.
+    if: github.repository_owner == 'speedbay-it'
+    # The runner class is an org variable (STANDARDS §12.2): where it runs is the variable's
+    # value, not this file. No fallback: an unset variable fails the job closed.
+    runs-on: ${{ fromJSON(vars.SB_RUNS_ON_LINUX_BG) }}
+    steps:
+      - name: Mirror clone source repo
+        run: |
+          git clone --mirror "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/speedbay-it/${{ github.event.repository.name }}.git" source.git
+
+      - name: Set up deploy key for this repo
+        run: |
+          mkdir -p ~/.ssh
+          python3 -c "
+          import json, os
+          keys = json.loads(os.environ['MIRROR_SSH_KEYS'])
+          name = os.environ['REPO_NAME']
+          key = keys.get(name)
+          if not key:
+              raise SystemExit(f'No mirror key found for repo {name}')
+          with open(os.path.expanduser('~/.ssh/id_ed25519'), 'w') as f:
+              f.write(key)
+          "
+          chmod 600 ~/.ssh/id_ed25519
+          # GitHub's published host key (api.github.com/meta, ssh_keys), pinned. ssh-keyscan
+          # trusted whatever answered on the network, and wrote nothing at all on a failed scan.
+          # If GitHub ever rotates this key the push fails with "Host key verification failed":
+          # update it here from that endpoint.
+          echo 'github.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl' >> ~/.ssh/known_hosts
+        env:
+          MIRROR_SSH_KEYS: ${{ secrets.MIRROR_SSH_KEYS }}
+          REPO_NAME: ${{ github.event.repository.name }}
+
+      - name: Push branches and tags to gkriegspeedbay (excludes GitHub's internal PR refs)
+        run: |
+          cd source.git
+          GIT_SSH_COMMAND="ssh -i ~/.ssh/id_ed25519 -o UserKnownHostsFile=~/.ssh/known_hosts" \
+            git push --prune "git@github.com:gkriegspeedbay/${{ github.event.repository.name }}.git" \
+            '+refs/heads/*:refs/heads/*' '+refs/tags/*:refs/tags/*'
